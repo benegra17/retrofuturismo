@@ -1,0 +1,832 @@
+<title>Átomo e Algoritmo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Hanken+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&family=Unbounded:wght@500;800&display=swap">
+<style>
+/* Layout: viagem horizontal em tela unica. Nove estacoes lado a lado, carro na estrada fixa, paisagem em paralaxe.
+   Cores 60-30-10: ciano (fundo, titulos), branco (paineis), cinza (medo, estrada, linhas). */
+:root {
+  --bg: #8ee0ea;
+  --fg: #0a2a30;
+  --muted: #1f5560;
+  --line: #3aa9b8;
+  --concrete: #50595d;
+  --concrete-2: #6b7478;
+  --concrete-fg: #f4fafb;
+  --concrete-muted: #d3dadc;
+  --void: #1d252844;
+  --void-solid: #1d2528;
+  --atom: #006470;
+  --atom-bright: #19c3d3;
+  --atom-soft: #d9f4f7;
+  --card: #ffffff;
+  --white: #f8fdfe;
+  --on-white: #0a2a30;
+  --muted-on-white: #31656e;
+  --deep: #00606b;
+  --orange: #ffffff;
+  --sun: #ffffff;
+  --leaf: #19c3d3;
+  --warn: #ffffff;
+  --road: #3c4448;
+
+  --f-atom: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --f-brut: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --f-body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --ease: cubic-bezier(.65, 0, .25, 1);
+  --travel: 1000ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a5560; --fg: #eafcfe; --muted: #a9dbe2; --line: #2f8a96;
+    --concrete: #2c3437; --concrete-2: #424b4f; --concrete-fg: #f1f7f8; --concrete-muted: #b4bec1;
+    --atom: #6fe6f2; --atom-bright: #3fd0dc; --deep: #04323a; --road: #1f2528;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a5560; --fg: #eafcfe; --muted: #a9dbe2; --line: #2f8a96;
+  --concrete: #2c3437; --concrete-2: #424b4f; --concrete-fg: #f1f7f8; --concrete-muted: #b4bec1;
+  --atom: #6fe6f2; --atom-bright: #3fd0dc; --deep: #04323a; --road: #1f2528;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+p { margin: 0; max-width: 62ch; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.mono { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+:focus-visible { outline: 3px solid #fff; outline-offset: 2px; box-shadow: 0 0 0 5px var(--deep); }
+
+/* ---------- palco ---------- */
+.stage { position: fixed; inset: 0; overflow: hidden; background: var(--bg); }
+.bg { position: absolute; top: -2%; bottom: -2%; left: 0; width: 100%; background: url("bg-seattle.jpg") center / cover no-repeat; transition: transform var(--travel) var(--ease); will-change: transform; }
+.veil { position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 78%, transparent); }
+.sky { position: absolute; left: 0; bottom: 64px; height: 220px; width: 7200px; fill: #fff; opacity: .34; transition: transform var(--travel) var(--ease); will-change: transform; pointer-events: none; }
+.sky.far { bottom: 92px; height: 170px; opacity: .18; }
+
+.monorail { position: absolute; left: 0; right: 0; top: 74px; height: 40px; pointer-events: none; }
+.monorail .beam { position: absolute; left: 0; right: 0; top: 30px; height: 4px; background: #fff; opacity: .8; }
+.monorail .train { position: absolute; top: 4px; left: 0; width: 220px; height: 26px; animation: monorail 16s linear infinite; }
+@keyframes monorail { from { transform: translateX(-260px); } to { transform: translateX(calc(100vw + 40px)); } }
+
+.speed { position: absolute; left: 0; right: 0; top: 0; bottom: 64px; pointer-events: none; opacity: 0; transition: opacity .25s; }
+.speed i { position: absolute; left: 0; height: 2px; width: 34vw; background: linear-gradient(90deg, transparent, #fff 55%, transparent); opacity: .7; }
+.stage.driving .speed { opacity: 1; }
+.stage.driving .speed i { animation: zip .55s linear infinite; }
+.speed i:nth-child(1) { top: 24%; animation-delay: -.1s !important; }
+.speed i:nth-child(2) { top: 41%; animation-delay: -.3s !important; width: 22vw; }
+.speed i:nth-child(3) { top: 58%; animation-delay: -.45s !important; }
+.speed i:nth-child(4) { top: 74%; animation-delay: -.2s !important; width: 28vw; }
+@keyframes zip { from { transform: translateX(110vw); } to { transform: translateX(-60vw); } }
+.stage[data-dir="-1"].driving .speed i { animation-name: zip-r; }
+@keyframes zip-r { from { transform: translateX(-60vw); } to { transform: translateX(110vw); } }
+
+/* ---------- trilho das estacoes ---------- */
+.track { position: absolute; top: 0; left: 0; bottom: 64px; display: flex; transition: transform var(--travel) var(--ease); will-change: transform; }
+.scene { flex: 0 0 auto; height: 100%; overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; touch-action: pan-y; scrollbar-width: thin;
+  padding-top: calc(60px + env(safe-area-inset-top, 0px)); padding-bottom: 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.scene > .in { margin: auto; width: 100%; max-width: 1160px; min-width: 0; }
+
+/* entrada: so transform, para que tudo esteja visivel em repouso */
+.scene.active .rise { animation: arrive .9s cubic-bezier(.2,.8,.2,1) calc(var(--d, 0) * 90ms + 120ms) both; }
+@keyframes arrive { from { transform: translateX(calc(var(--dir, 1) * 70px)) skewX(calc(var(--dir, 1) * -5deg)); } }
+
+/* ---------- HUD ---------- */
+.hud { position: absolute; z-index: 30; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px)); padding-bottom: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; background: var(--deep); color: #fff; border: 2px solid #fff; border-radius: 8px; padding: 6px 12px; }
+.brand b { font-family: var(--f-atom); font-weight: 800; font-size: 13px; letter-spacing: -0.02em; white-space: nowrap; }
+.brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .9; }
+.arrows { display: flex; gap: 8px; }
+.arrows button { width: 44px; height: 44px; display: grid; place-items: center; background: #fff; color: var(--on-white); border: 3px solid var(--deep); border-radius: 50%; font-size: 20px; line-height: 1; transition: transform .15s; }
+.arrows button:hover:not(:disabled) { transform: scale(1.08); }
+.arrows button:disabled { opacity: .35; cursor: default; }
+
+/* ---------- estrada ---------- */
+.road { position: absolute; z-index: 30; left: 0; right: 0; bottom: 0; height: 64px;
+  background: linear-gradient(90deg, #fff 0 22px, transparent 22px 48px) 0 33px / 48px 4px repeat-x, var(--road);
+  border-top: 4px solid #fff; }
+.stage.driving .road { animation: dashes .38s linear infinite; }
+.stage.driving[data-dir="-1"] .road { animation-name: dashes-r; }
+@keyframes dashes { to { background-position: -48px 33px, 0 0; } }
+@keyframes dashes-r { to { background-position: 48px 33px, 0 0; } }
+.lane { position: absolute; top: 0; bottom: 0; left: 56px; right: 56px; }
+.st { position: absolute; top: -4px; width: 44px; height: 44px; margin-left: -22px; background: none; border: 0; padding: 0; display: grid; place-items: start center; }
+.st::before { content: ""; width: 12px; height: 12px; margin-top: -16px; border-radius: 50%; background: #fff; border: 3px solid var(--deep); transition: transform .25s, background .25s; }
+.st:hover::before { transform: scale(1.35); }
+.st[aria-current="true"]::before { background: var(--atom-bright); transform: scale(1.5); }
+.stop { position: absolute; bottom: 76px; left: 0; transform: translateX(-50%); background: var(--deep); color: #fff; border: 2px solid #fff; border-radius: 6px; padding: 4px 10px; white-space: nowrap; pointer-events: none; transition: left var(--travel) var(--ease); }
+.car { position: absolute; bottom: 6px; left: 0; width: 88px; margin-left: -44px; transition: left var(--travel) var(--ease); pointer-events: none; }
+.car svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 0 #0006); transition: transform .35s; }
+.car.rev svg { transform: scaleX(-1); }
+.stage.driving .car svg { animation: bob .22s ease-in-out infinite alternate; }
+@keyframes bob { from { translate: 0 0; } to { translate: 0 -2px; } }
+.wheel { transform-box: fill-box; transform-origin: center; }
+.stage.driving .wheel { animation: spin .35s linear infinite; }
+.car.rev .wheel { animation-direction: reverse; }
+@keyframes spin { to { rotate: 360deg; } }
+.puff { opacity: 0; }
+.stage.driving .puff { animation: puff .6s ease-out infinite; }
+@keyframes puff { from { opacity: .6; transform: translateX(0); } to { opacity: 0; transform: translateX(-14px); } }
+
+/* ---------- conteudo das estacoes ---------- */
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px 40px; align-items: center; }
+.eyebrow { color: var(--muted); margin-bottom: 14px; }
+.title { display: flex; flex-direction: column; gap: 4px; line-height: .95; }
+.t-atom { font-family: var(--f-atom); font-weight: 800; color: var(--atom); font-size: clamp(1.5rem, 3.6vw, 3rem); letter-spacing: -0.03em; line-height: 1.1; }
+.t-algo { font-family: var(--f-brut); font-weight: 900; text-transform: uppercase; color: var(--fg); font-size: clamp(2.8rem, 8.6vw, 6.4rem); letter-spacing: .01em; }
+.sub { color: var(--muted); margin-top: 14px; }
+.lede { font-size: clamp(1rem, 1.7vw, 1.2rem); line-height: 1.5; margin-top: 14px; max-width: 50ch; }
+.go { margin-top: 22px; display: inline-flex; align-items: center; gap: 12px; background: var(--deep); color: #fff; border: 3px solid #fff; outline: 3px solid var(--deep); border-radius: 999px; padding: 12px 22px; font-family: var(--f-atom); font-weight: 500; font-size: 14px; transition: transform .2s; }
+.go:hover { transform: translateX(4px); }
+.hint { margin-top: 14px; color: var(--muted); }
+.banner { margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.banner img { display: block; width: 100%; height: auto; max-width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 0 40px 0 40px; border: 4px solid #fff; }
+.banner figcaption { color: var(--muted); }
+
+.quote { margin: 0; background: var(--concrete); color: var(--concrete-fg); padding: clamp(24px, 5vw, 56px); display: flex; flex-direction: column; gap: 20px; }
+.quote blockquote { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.quote blockquote p:first-child { font-family: var(--f-brut); font-weight: 900; text-transform: uppercase; font-size: clamp(2.2rem, 7vw, 5.6rem); line-height: .95; max-width: 20ch; }
+.quote .pt { font-size: clamp(1rem, 1.8vw, 1.25rem); color: var(--concrete-muted); }
+.quote figcaption { color: var(--concrete-muted); max-width: 80ch; line-height: 1.6; }
+
+.sec-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.sec-head h2 { font-family: var(--f-atom); font-weight: 800; font-size: clamp(1.4rem, 3.4vw, 2.4rem); letter-spacing: -0.03em; line-height: 1.1; }
+.sec-head p { color: var(--muted); }
+.panel-white { background: var(--white); color: var(--on-white); padding: clamp(16px, 3vw, 32px); border-radius: 0 28px 0 28px; }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 600px; }
+th, td { text-align: left; padding: 11px 16px 11px 0; border-bottom: 1px solid #c3e9ee; vertical-align: top; font-size: 15px; }
+thead th, tbody th { font-family: var(--f-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted-on-white); font-weight: 500; }
+tbody th { width: 22%; }
+td.fear { font-weight: 700; }
+td.hope { font-weight: 700; color: #006470; }
+
+/* cartoes de era */
+.sign { display: inline-block; font-family: var(--f-mono); font-weight: 500; font-size: 13px; letter-spacing: .1em; color: #fff; background: var(--deep); border: 3px solid #fff; outline: 3px solid var(--deep); border-radius: 8px; padding: 6px 14px; margin: 3px 3px 16px; }
+.cell { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px 36px; padding: clamp(18px, 3vw, 36px); min-width: 0; }
+.cell .txt, .cell .media { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tag { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.cell h3 { font-size: clamp(2rem, 4.4vw, 3.2rem); line-height: 1; }
+.cell p { font-size: 15.5px; }
+.badge { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border: 1px solid currentColor; }
+.marks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 20px; }
+.marks li { padding: 8px 0; border-top: 1px solid color-mix(in srgb, currentColor 28%, transparent); font-size: 13.5px; line-height: 1.4; }
+.marks b { font-family: var(--f-mono); font-weight: 500; font-size: 12px; letter-spacing: .04em; display: block; opacity: .75; }
+figure { margin: 0; }
+.stagebox { padding: 10px; }
+.stagebox svg { display: block; width: 100%; height: auto; max-width: 100%; max-height: 38vh; }
+figcaption { margin-top: 8px; opacity: .85; line-height: 1.5; }
+.photo { display: flex; flex-direction: column; gap: 8px; }
+.photo img { display: block; width: 100%; height: auto; max-width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.photo.tall img { aspect-ratio: 16 / 9; object-fit: contain; background: color-mix(in srgb, currentColor 8%, transparent); }
+.photo figcaption { margin: 0; }
+
+.fearc { background: var(--concrete); color: var(--concrete-fg); --draw: var(--concrete-fg); --s1: var(--concrete-2); --s2: var(--concrete); --stage: #00000026; --hole: var(--void-solid); }
+.fearc h3 { font-family: var(--f-brut); font-weight: 900; text-transform: uppercase; font-size: clamp(2.6rem, 6vw, 4.4rem); letter-spacing: .01em; }
+.fearc .tag { color: var(--concrete-muted); }
+.hopec { background: var(--white); color: var(--on-white); border-radius: 0 28px 0 28px; --draw: var(--on-white); --s1: var(--card); --s2: var(--atom-soft); --stage: #19c3d326; --hole: #19c3d3; }
+.hopec h3 { font-family: var(--f-atom); font-weight: 800; letter-spacing: -0.04em; color: #006470; }
+.hopec .tag { color: var(--muted-on-white); }
+
+/* svg */
+.ln { fill: none; stroke: var(--draw); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.fs1 { fill: var(--s1); stroke: var(--draw); stroke-width: 1.6; stroke-linejoin: round; }
+.fs2 { fill: var(--s2); stroke: var(--draw); stroke-width: 1.6; stroke-linejoin: round; }
+.hole { fill: var(--hole); stroke: var(--draw); stroke-width: 1.2; }
+.fx-teal { fill: var(--atom-bright); stroke: var(--draw); stroke-width: 1.6; stroke-linejoin: round; }
+.fx-orange { fill: var(--orange); stroke: var(--draw); stroke-width: 1.4; stroke-linejoin: round; }
+.fx-sun { fill: var(--sun); stroke: var(--draw); stroke-width: 1.4; }
+.fx-leaf { fill: var(--leaf); stroke: var(--draw); stroke-width: 1.2; }
+.fx-warn { fill: var(--warn); }
+.dash { stroke-dasharray: 3 4; }
+.thin { stroke-width: 1; opacity: .55; }
+.grid { stroke: var(--draw); stroke-width: .6; opacity: .18; }
+
+.diffs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 36px; }
+.diff { padding: 14px 0; border-bottom: 1px solid #c3e9ee; display: flex; flex-direction: column; gap: 6px; }
+.diff h3 { font-family: var(--f-atom); font-weight: 500; font-size: clamp(.95rem, 1.6vw, 1.1rem); letter-spacing: -.02em; line-height: 1.25; color: #006470; }
+.diff p { font-size: 14.5px; }
+
+.close { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px 48px; background: var(--deep); color: #f4fdfe; padding: clamp(24px, 5vw, 56px); }
+.close .mono { opacity: .75; }
+.close h2 { font-family: var(--f-brut); font-weight: 900; text-transform: uppercase; font-size: clamp(2.4rem, 6.4vw, 4.8rem); line-height: .95; }
+.close h2 em { font-style: normal; font-family: var(--f-atom); font-weight: 800; text-transform: none; letter-spacing: -.04em; color: #5fe3f0; font-size: .82em; }
+.close .body { display: flex; flex-direction: column; gap: 14px; }
+.credits { margin-top: 14px; font-size: 12px; opacity: .75; max-width: 70ch; }
+
+/* tese */
+.thesis { display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px 40px; align-items: center; }
+.big { font-family: var(--f-brut); font-weight: 900; text-transform: uppercase; font-size: clamp(2.4rem, 6.6vw, 5.2rem); line-height: .95; color: var(--fg); }
+.thesis .lede { margin-top: 16px; }
+.question { margin-top: 16px; padding: 12px 16px; background: var(--deep); color: #fff; border-radius: 0 18px 0 18px; font-size: 15px; display: flex; flex-direction: column; gap: 6px; }
+.question .mono { opacity: .8; }
+.panel-white .sub2 { color: var(--muted-on-white); margin: 14px 0 6px; }
+.panel-white .sub2:first-child { margin-top: 0; }
+.hyp { font-family: var(--f-atom); font-weight: 500; font-size: clamp(1rem, 1.9vw, 1.25rem); line-height: 1.35; letter-spacing: -.02em; color: #006470; }
+.chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chips li { font-size: 13px; padding: 4px 10px; border: 2px solid #19c3d3; border-radius: 999px; }
+.panel-white p { font-size: 14.5px; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; counter-reset: step; }
+.steps li { counter-increment: step; position: relative; background: var(--white); color: var(--on-white); padding: 16px 16px 16px 64px; display: flex; flex-direction: column; gap: 4px; border-radius: 0 20px 0 20px; }
+.steps li::before { content: counter(step); position: absolute; left: 14px; top: 14px; width: 36px; height: 36px; display: grid; place-items: center; background: var(--deep); color: #fff; border: 3px solid #fff; outline: 2px solid var(--deep); border-radius: 50%; font-family: var(--f-atom); font-weight: 800; font-size: 14px; }
+.steps b { font-family: var(--f-atom); font-weight: 500; font-size: 15px; letter-spacing: -.02em; color: #006470; }
+.steps span { font-size: 14.5px; line-height: 1.45; }
+.refs-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.refs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.ref { background: var(--white); color: var(--on-white); padding: 16px; display: flex; flex-direction: column; gap: 4px; border-radius: 0 20px 0 20px; }
+.ref b { font-family: var(--f-atom); font-weight: 800; font-size: 16px; letter-spacing: -.03em; color: #006470; }
+.ref .mono { color: var(--muted-on-white); font-size: 11px; }
+.ref p { font-size: 14px; line-height: 1.45; }
+.limits { background: var(--concrete); color: var(--concrete-fg); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.limits .mono { color: var(--concrete-muted); }
+.limits ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 14.5px; line-height: 1.45; }
+
+@media (min-width: 900px) {
+  .thesis { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); }
+  .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .steps li { padding: 64px 16px 16px; }
+  .steps li::before { left: 16px; top: 16px; }
+  .refs-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; }
+  .refs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); }
+  .cell { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .diffs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .close { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .close .mono { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .brand span { display: none; }
+  .car { width: 70px; margin-left: -35px; }
+  .lane { left: 40px; right: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --travel: 1ms; }
+  .scene.active .rise, .monorail .train, .stage.driving .speed i, .stage.driving .road, .stage.driving .wheel, .stage.driving .car svg, .stage.driving .puff { animation: none !important; }
+  .monorail .train { transform: translateX(30vw); }
+}
+</style>
+
+<div class="stage" id="stage" data-dir="1">
+  <div class="bg" id="bg"></div>
+  <div class="veil"></div>
+
+  <svg class="sky far" id="skyFar" viewBox="0 0 7200 170" preserveAspectRatio="xMinYMax slice" aria-hidden="true">
+    <g transform="scale(.78)"><use href="#tile" x="0"/><use href="#tile" x="900"/><use href="#tile" x="1800"/><use href="#tile" x="2700"/><use href="#tile" x="3600"/><use href="#tile" x="4500"/><use href="#tile" x="5400"/><use href="#tile" x="6300"/><use href="#tile" x="7200"/></g>
+  </svg>
+  <svg class="sky" id="skyNear" viewBox="0 0 7200 220" aria-hidden="true">
+    <defs>
+      <g id="tile">
+        <rect x="20" y="120" width="60" height="100"/><rect x="90" y="80" width="40" height="140"/>
+        <rect x="200" y="104" width="8" height="116"/><ellipse cx="204" cy="100" rx="46" ry="9"/><path d="M178 96 Q204 66 230 96 Z"/>
+        <path d="M300 220 L304 40 L308 220 Z"/><rect x="340" y="140" width="70" height="80"/><rect x="420" y="100" width="50" height="120"/>
+        <rect x="556" y="130" width="6" height="90"/><ellipse cx="559" cy="126" rx="34" ry="7"/><path d="M539 122 Q559 98 579 122 Z"/>
+        <path d="M640 220 Q700 50 760 220 L744 220 Q700 96 656 220 Z"/><rect x="780" y="130" width="50" height="90"/><rect x="840" y="150" width="40" height="70"/>
+      </g>
+    </defs>
+    <use href="#tile" x="0"/><use href="#tile" x="900"/><use href="#tile" x="1800"/><use href="#tile" x="2700"/><use href="#tile" x="3600"/><use href="#tile" x="4500"/><use href="#tile" x="5400"/><use href="#tile" x="6300"/>
+  </svg>
+
+  <div class="monorail" aria-hidden="true">
+    <div class="beam"></div>
+    <svg class="train" viewBox="0 0 220 26"><path d="M4 22 L4 12 Q4 3 16 3 L180 3 Q214 4 216 20 L216 22 Z" fill="#fff" stroke="#0a2a30" stroke-width="1.6"/><path d="M12 12 L196 12" stroke="#19c3d3" stroke-width="4" stroke-linecap="round"/><g fill="#0a2a30"><rect x="30" y="6" width="14" height="4"/><rect x="54" y="6" width="14" height="4"/><rect x="78" y="6" width="14" height="4"/><rect x="102" y="6" width="14" height="4"/><rect x="126" y="6" width="14" height="4"/><rect x="190" y="5" width="18" height="5"/></g></svg>
+  </div>
+
+  <div class="speed" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+
+  <div class="track" id="track">
+
+    <!-- 1 · Largada -->
+    <section class="scene" id="largada" data-name="Largada" aria-label="Largada">
+      <div class="in hero-grid">
+        <div class="rise" style="--d:0">
+          <div class="eyebrow mono">Ensaio · arquitetura retrofuturista · 1945 e hoje</div>
+          <h1 class="title">
+            <span class="t-atom">Futuro em arte:</span>
+            <span class="t-algo">o retrofuturismo</span>
+          </h1>
+          <div class="sub mono">Átomo e Algoritmo · duas eras, dois medos, duas esperanças</div>
+          <p class="lede">Em 1945 a humanidade ganhou uma tecnologia que podia acabar com o mundo ou resolver a energia para sempre. Hoje ganhou outra com a mesma promessa dupla, trocando energia por produtividade. Nas duas vezes uma parte das pessoas se assustou, outra se encantou, e a arquitetura virou o lugar onde cada humor ganhou forma.</p>
+          <button class="go" type="button" data-next>Partir <span aria-hidden="true">→</span></button>
+          <p class="hint mono">Setas, roda do mouse, arrastar ou toque na estrada</p>
+        </div>
+        <figure class="banner rise" style="--d:2">
+          <img src="hero-torus.jpg" width="1400" height="1041" alt="Pintura retrofuturista do interior de uma colônia espacial em forma de toro, com lago, colinas verdes e casas coloridas sob um teto de vidro">
+          <figcaption class="mono">Colônia espacial em toro (Stanford torus), pintura de Don Davis para a NASA, c. 1975 · domínio público, via Wikimedia Commons</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 2 · Trinity -->
+    <section class="scene" id="trinity" data-name="Trinity, 1945" aria-label="Trinity, 1945">
+      <div class="in">
+        <figure class="quote rise" style="--d:0">
+          <blockquote lang="en">
+            <p>“Now I am become Death, the destroyer of worlds.”</p>
+            <p class="pt" lang="pt-BR">Agora eu me tornei a Morte, a destruidora de mundos.</p>
+          </blockquote>
+          <figcaption class="mono">J. Robert Oppenheimer · lembrando o teste Trinity, de 1945, em documentário da NBC de 1965 · verso do Bhagavad Gita</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- A tese -->
+    <section class="scene" id="tese" data-name="A tese" aria-label="A tese">
+      <div class="in thesis">
+        <div class="rise" style="--d:0">
+          <div class="eyebrow mono">A tese · da era atômica à era da IA</div>
+          <h2 class="big">O futuro não precisa acontecer para transformar o presente.</h2>
+          <p class="lede">A tese compara dois momentos, 1945–1960 e 2022–2026, em que uma tecnologia mudou o que a sociedade imaginava ser possível. Ela não compara a bomba com o ChatGPT. Compara como as expectativas se formam no nascimento de cada era, e como elas movem investimento, política e instituições antes de a economia mudar de fato.</p>
+          <p class="question"><span class="mono">Pergunta de pesquisa</span>De que maneira os futuros imaginados no nascimento de uma era tecnológica moldam as decisões econômicas e a formação de instituições no presente?</p>
+        </div>
+        <div class="panel-white rise" style="--d:2">
+          <div class="mono sub2">Hipótese</div>
+          <p class="hyp">Uma tecnologia não muda a economia só por seus efeitos produtivos. Muda também pelo modo como pessoas, empresas e governos passam a imaginar o futuro.</p>
+          <div class="mono sub2">O que as expectativas alteram</div>
+          <ul class="chips">
+            <li>Trabalho e produção</li><li>Escassez de recursos</li><li>Poder entre países</li><li>Vantagem entre empresas</li><li>Papel do Estado</li><li>Instituições de coordenação</li><li>Riscos e oportunidades</li>
+          </ul>
+          <div class="mono sub2">O papel do retrofuturismo</div>
+          <p>Estudar o futuro que o passado imaginava. O objetivo não é mostrar que a época errou as previsões, e sim ler nas imagens de futuro as crenças, os medos e as prioridades econômicas que elas revelam.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- O mecanismo -->
+    <section class="scene" id="mecanismo" data-name="O mecanismo" aria-label="O mecanismo proposto">
+      <div class="in">
+        <div class="sec-head rise" style="--d:0">
+          <h2>Como o futuro imaginado vira instituição</h2>
+          <p>Seis etapas, na ordem em que a tese propõe que acontecem. É uma hipótese analítica, e não um mecanismo já demonstrado.</p>
+        </div>
+        <ol class="steps rise" style="--d:1">
+          <li><b>Ruptura tecnológica</b><span>Uma inovação mostra capacidades que pareciam impossíveis ou distantes.</span></li>
+          <li><b>Incerteza radical</b><span>Ninguém sabe ainda as consequências econômicas, sociais e políticas.</span></li>
+          <li><b>Futuros imaginados</b><span>Surgem narrativas otimistas, pessimistas e intermediárias para interpretar o que se abriu.</span></li>
+          <li><b>Ação econômica e política</b><span>Empresas investem, governos traçam estratégias e trabalhadores ajustam expectativas.</span></li>
+          <li><b>Mudança institucional</b><span>Novas regras e organizações são propostas ou criadas para administrar riscos e oportunidades.</span></li>
+          <li><b>Dependência de trajetória</b><span>O que foi construído em torno das expectativas iniciais segue influenciando, mesmo se o futuro real for outro.</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 3 · Os dois sustos -->
+    <section class="scene" id="sustos" data-name="Os dois sustos" aria-label="Os dois sustos lado a lado">
+      <div class="in">
+        <div class="sec-head rise" style="--d:0">
+          <h2>Os dois sustos lado a lado</h2>
+          <p>A estrutura se repete. As primeiras linhas são os paralelos da tese, as últimas são o que cada lado construiu ou poderia construir. São analogias analíticas, e não equivalências perfeitas.</p>
+        </div>
+        <div class="panel-white rise" style="--d:1">
+          <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela comparativa entre a era atômica e a era da IA">
+            <table>
+              <thead><tr><th></th><th>1945 · A bomba</th><th>2020 · A IA</th></tr></thead>
+              <tbody>
+                <tr><th>Promessa</th><td>Energia infinita</td><td>Produtividade infinita</td></tr>
+                <tr><th>Ameaça</th><td>Aniquilação</td><td>Perda de trabalho, de verdade e de controle</td></tr>
+                <tr><th>Símbolo visível</th><td>Cogumelo, átomo, órbitas</td><td>Uma caixa de texto</td></tr>
+                <tr><th>Prédio físico</th><td>Reator, abrigo antiaéreo</td><td>Data center</td></tr>
+                <tr><th>Recurso estratégico</th><td>Urânio e infraestrutura industrial nuclear</td><td>Chips, energia, dados e capacidade computacional</td></tr>
+                <tr><th>Quem disputa</th><td>Estados, militares e universidades, com o Projeto Manhattan</td><td>Laboratórios de fronteira, empresas e governos em aliança</td></tr>
+                <tr><th>Resposta institucional</th><td>Tratados, dissuasão e não proliferação</td><td>Segurança de IA, governança de modelos e regulação</td></tr>
+                <tr><th>Resposta do medo</th><td class="fear">Brutalismo</td><td class="fear">Monólito de dados (rascunho)</td></tr>
+                <tr><th>Resposta da esperança</th><td class="hope">Futurismo atômico</td><td class="hope">Solarpunk (rascunho)</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · Bomba · medo -->
+    <section class="scene" id="bomba-medo" data-name="Era da bomba · medo" aria-label="Era da bomba, medo: brutalismo">
+      <div class="in">
+        <div class="sign rise" style="--d:0">SAÍDA 1945 — 1975 · A ERA DA BOMBA</div>
+        <article class="cell fearc rise" style="--d:1">
+          <div class="txt">
+            <div class="tag mono"><span>Medo</span><span>O fim do mundo</span></div>
+            <h3>Brutalismo</h3>
+            <p>Quem achava que o futuro seria cinzas construiu como quem se prepara para ele: concreto aparente, massa, poucas aberturas, nenhum enfeite. O nome vem do <i>béton brut</i>, o concreto cru de Le Corbusier em Marselha, e foi dado ao movimento pelo crítico Reyner Banham em 1955.</p>
+            <p>A ligação direta com o medo atômico é uma leitura minha. Reconstrução barata e habitação em massa pesaram tanto quanto. Mas o parentesco com o bunker é visível, e o urbanista Paul Virilio dedicou um livro aos abrigos do Muro do Atlântico.</p>
+            <ul class="marks">
+              <li><b>1952</b>Unité d’Habitation, Marselha</li>
+              <li><b>1965–76</b>Barbican, Londres</li>
+              <li><b>1968</b>MASP, São Paulo, de Lina Bo Bardi</li>
+              <li><b>1969</b>FAU-USP, São Paulo, de Vilanova Artigas</li>
+            </ul>
+          </div>
+          <div class="media">
+            <figure class="stagebox" style="background: var(--stage)">
+              <svg viewBox="0 0 320 200" role="img" aria-label="Elevação de um bloco de concreto sobre pilotis, com janelas profundas e casa de máquinas na cobertura">
+                <g class="grid"><line x1="0" y1="172" x2="320" y2="172"/></g>
+                <line class="ln" x1="8" y1="172" x2="312" y2="172"/>
+                <rect class="fs1" x="124" y="12" width="64" height="14"/>
+                <rect class="fs2" x="36" y="26" width="248" height="8"/>
+                <rect class="fs1" x="40" y="34" width="240" height="86"/>
+                <g>
+                  <rect class="hole" x="52" y="46" width="20" height="16"/><rect class="hole" x="80" y="46" width="20" height="16"/><rect class="hole" x="108" y="46" width="20" height="16"/><rect class="hole" x="136" y="46" width="20" height="16"/><rect class="hole" x="164" y="46" width="20" height="16"/><rect class="hole" x="192" y="46" width="20" height="16"/><rect class="hole" x="220" y="46" width="20" height="16"/><rect class="hole" x="248" y="46" width="20" height="16"/>
+                  <rect class="hole" x="52" y="68" width="20" height="16"/><rect class="hole" x="80" y="68" width="20" height="16"/><rect class="hole" x="108" y="68" width="20" height="16"/><rect class="hole" x="136" y="68" width="20" height="16"/><rect class="hole" x="164" y="68" width="20" height="16"/><rect class="hole" x="192" y="68" width="20" height="16"/><rect class="hole" x="220" y="68" width="20" height="16"/><rect class="hole" x="248" y="68" width="20" height="16"/>
+                  <rect class="hole" x="52" y="90" width="20" height="16"/><rect class="hole" x="80" y="90" width="20" height="16"/><rect class="hole" x="108" y="90" width="20" height="16"/><rect class="hole" x="136" y="90" width="20" height="16"/><rect class="hole" x="164" y="90" width="20" height="16"/><rect class="hole" x="192" y="90" width="20" height="16"/><rect class="hole" x="220" y="90" width="20" height="16"/><rect class="hole" x="248" y="90" width="20" height="16"/>
+                </g>
+                <g class="ln thin"><line x1="52" y1="64" x2="268" y2="64"/><line x1="52" y1="86" x2="268" y2="86"/><line x1="52" y1="108" x2="268" y2="108"/></g>
+                <rect class="fs2" x="46" y="120" width="16" height="52"/><rect class="fs2" x="92" y="120" width="16" height="52"/><rect class="fs2" x="138" y="120" width="16" height="52"/><rect class="fs2" x="184" y="120" width="16" height="52"/><rect class="fs2" x="230" y="120" width="16" height="52"/><rect class="fs2" x="262" y="120" width="16" height="52"/>
+                <circle class="fs1" cx="22" cy="156" r="3.4"/><line class="ln" x1="22" y1="160" x2="22" y2="172"/>
+              </svg>
+              <figcaption class="mono">Elevação conceitual · pilotis, brise-soleil, casa de máquinas</figcaption>
+            </figure>
+            <figure class="photo">
+              <img src="mam-rio.jpg" width="1200" height="800" alt="Pilares inclinados de concreto aparente sustentando o corpo de vidro do Museu de Arte Moderna do Rio de Janeiro, com um espelho d'água em primeiro plano">
+              <figcaption class="mono">Na prática · MAM Rio, de Affonso Eduardo Reidy · foto: Halley Pacheco de Oliveira, CC BY-SA 3.0, via Wikimedia Commons</figcaption>
+            </figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 5 · Bomba · esperança -->
+    <section class="scene" id="bomba-esperanca" data-name="Era da bomba · esperança" aria-label="Era da bomba, esperança: futurismo atômico">
+      <div class="in">
+        <div class="sign rise" style="--d:0">SAÍDA 1945 — 1975 · A ERA DA BOMBA</div>
+        <article class="cell hopec rise" style="--d:1">
+          <div class="txt">
+            <div class="tag mono"><span>Esperança</span><span>Energia infinita</span></div>
+            <h3>Futurismo atômico</h3>
+            <p>Quem acreditou na energia infinita desenhou para ela. Em 1953 Eisenhower lançou o programa Átomos para a Paz. Em 1954 Lewis Strauss, presidente da Comissão de Energia Atômica dos EUA, prometeu eletricidade barata demais para ser medida.</p>
+            <p>A arquitetura respondeu com parábolas, bumerangues, discos voadores, vidro e balanços impossíveis. O estilo ganhou o apelido de Googie, de uma lanchonete de Los Angeles projetada por John Lautner em 1949.</p>
+            <ul class="marks">
+              <li><b>1955</b>Tomorrowland, Disneyland</li>
+              <li><b>1957</b>Ford Nucleon, carro-conceito movido a reator, só em maquete</li>
+              <li><b>1958</b>Atomium, Bruxelas, um cristal de ferro ampliado 165 bilhões de vezes</li>
+              <li><b>1961</b>Theme Building, aeroporto LAX</li>
+            </ul>
+          </div>
+          <div class="media">
+            <figure class="stagebox" style="background: var(--stage)">
+              <svg viewBox="0 0 320 200" role="img" aria-label="Elevação de uma estrutura em disco voador sobre quatro pernas curvas, com órbitas e estrelas">
+                <line class="ln" x1="8" y1="172" x2="312" y2="172"/>
+                <ellipse class="ln dash thin" cx="160" cy="76" rx="118" ry="34" transform="rotate(-14 160 76)"/>
+                <ellipse class="ln dash thin" cx="160" cy="76" rx="118" ry="34" transform="rotate(14 160 76)"/>
+                <path class="ln" style="stroke-width:3" d="M78 172 C88 118 118 94 142 86"/>
+                <path class="ln" style="stroke-width:3" d="M242 172 C232 118 202 94 178 86"/>
+                <path class="ln" style="stroke-width:3" d="M122 172 C126 130 140 104 152 88"/>
+                <path class="ln" style="stroke-width:3" d="M198 172 C194 130 180 104 168 88"/>
+                <line class="ln" x1="160" y1="44" x2="160" y2="14"/>
+                <circle class="fx-orange" cx="160" cy="12" r="4"/>
+                <path class="fs1" d="M126 72 Q160 30 194 72 Z"/>
+                <ellipse class="fx-teal" cx="160" cy="76" rx="82" ry="12"/>
+                <path class="ln thin" d="M120 78 Q160 86 200 78"/>
+                <g class="fx-orange"><path transform="translate(44 44)" d="M0-8L2-2 8 0 2 2 0 8-2 2-8 0-2-2Z"/><path transform="translate(284 30)" d="M0-8L2-2 8 0 2 2 0 8-2 2-8 0-2-2Z"/><path transform="translate(272 128) scale(.7)" d="M0-8L2-2 8 0 2 2 0 8-2 2-8 0-2-2Z"/><path transform="translate(40 120) scale(.7)" d="M0-8L2-2 8 0 2 2 0 8-2 2-8 0-2-2Z"/></g>
+                <circle class="fs1" cx="22" cy="156" r="3.4"/><line class="ln" x1="22" y1="160" x2="22" y2="172"/>
+              </svg>
+              <figcaption class="mono">Elevação conceitual · disco, pernas parabólicas, órbitas</figcaption>
+            </figure>
+            <figure class="photo">
+              <img src="lax-theme-building.jpg" width="1200" height="800" alt="O Theme Building do aeroporto de Los Angeles à noite, um disco iluminado sobre arcos brancos cruzados, com a lua ao fundo">
+              <figcaption class="mono">Na prática · Theme Building, aeroporto LAX, 1961 · foto: Junkyardsparkle, CC0, via Wikimedia Commons</figcaption>
+            </figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 6 · IA · medo -->
+    <section class="scene" id="ia-medo" data-name="Era da IA · medo" aria-label="Era da IA, medo: monólito de dados">
+      <div class="in">
+        <div class="sign rise" style="--d:0">SAÍDA 2020 — HOJE · A ERA DA IA</div>
+        <article class="cell fearc rise" style="--d:1">
+          <div class="txt">
+            <div class="tag mono"><span>Medo</span><span>O fim do mundo</span><span class="badge">Rascunho 01</span></div>
+            <h3>Monólito de dados</h3>
+            <p>Quem acha que a IA vai tirar o trabalho, a verdade e o controle pede uma arquitetura que não se explique. Esse prédio já existe: o data center, uma caixa de concreto e metal sem janelas, sem rosto e sem placa.</p>
+            <p>Hoje ele é brutalismo por acidente. O rascunho assume o gesto de propósito, com massa térmica, cobertura enterrada e uma única fresta de luz. Um prédio que não olha para fora, porque o que acontece dentro não é da conta de quem passa.</p>
+            <ul class="marks">
+              <li><b>Material</b>Concreto aparente, laje espessa como isolante e inércia térmica</li>
+              <li><b>Abertura</b>Uma fresta de entrada, nenhuma janela</li>
+              <li><b>Pergunta</b>Quem entra, quem sabe o que roda lá dentro</li>
+            </ul>
+          </div>
+          <div class="media">
+            <figure class="stagebox" style="background: var(--stage)">
+              <svg viewBox="0 0 320 200" role="img" aria-label="Elevação de um bloco enorme de concreto sem janelas, com uma única fresta luminosa e uma figura humana minúscula ao lado">
+                <line class="ln" x1="8" y1="172" x2="312" y2="172"/>
+                <rect class="fs2" x="96" y="40" width="30" height="14"/><rect class="fs2" x="150" y="40" width="30" height="14"/><rect class="fs2" x="204" y="40" width="30" height="14"/>
+                <path class="fs1" d="M30 172 L30 96 L74 54 L290 54 L290 172 Z"/>
+                <g class="ln thin"><line x1="84" y1="76" x2="282" y2="76"/><line x1="84" y1="88" x2="282" y2="88"/><line x1="84" y1="100" x2="282" y2="100"/><line x1="84" y1="112" x2="282" y2="112"/><line x1="84" y1="124" x2="282" y2="124"/><line x1="84" y1="136" x2="282" y2="136"/></g>
+                <rect class="hole" x="168" y="126" width="7" height="46"/>
+                <rect class="fx-warn" x="170" y="144" width="3" height="20"/>
+                <circle class="fs1" cx="140" cy="158" r="3.4"/><line class="ln" x1="140" y1="162" x2="140" y2="172"/>
+              </svg>
+              <figcaption class="mono">Rascunho · sem fachada, uma fresta, pessoa para dar escala</figcaption>
+            </figure>
+            <figure class="photo">
+              <img src="port-house.jpg" width="1200" height="675" alt="Silhueta escura do Port House de Antuérpia em contraluz: um volume em forma de diamante em balanço sobre um prédio antigo, com o sol ao fundo">
+              <figcaption class="mono">Contraponto · Port House, Antuérpia, em contraluz. Uma massa suspensa que vira silhueta opaca, mas é feita de vidro e aberta à cidade · foto: Bobo Boom, CC BY 2.0, via Wikimedia Commons</figcaption>
+            </figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 7 · IA · esperança -->
+    <section class="scene" id="ia-esperanca" data-name="Era da IA · esperança" aria-label="Era da IA, esperança: solarpunk">
+      <div class="in">
+        <div class="sign rise" style="--d:0">SAÍDA 2020 — HOJE · A ERA DA IA</div>
+        <article class="cell hopec rise" style="--d:1">
+          <div class="txt">
+            <div class="tag mono"><span>Esperança</span><span>Produtividade infinita</span><span class="badge">Rascunho 02</span></div>
+            <h3>Solarpunk</h3>
+            <p>Quem acha que a IA entrega produtividade infinita precisa responder para onde vai o tempo ganho. O solarpunk responde com plantas, painéis, água da chuva e escala humana. O desenho é uma torre em degraus em que cada terraço é horta e sombra.</p>
+            <p>O risco é o mesmo do Googie: virar estética sem engenharia, com o verde servindo de álibi. A proposta só vale se a cisterna, o painel e a horta forem contas fechadas, e não só imagem de render.</p>
+            <ul class="marks">
+              <li><b>2012</b>Gardens by the Bay, Singapura</li>
+              <li><b>2014</b>Bosco Verticale, Milão, centenas de árvores nas varandas</li>
+              <li><b>Teste</b>O que o prédio produz, e quem colhe</li>
+            </ul>
+          </div>
+          <div class="media">
+            <figure class="stagebox" style="background: var(--stage)">
+              <svg viewBox="0 0 320 200" role="img" aria-label="Elevação de uma torre em degraus com terraços plantados, painéis solares no topo, cisterna na base, uma turbina eólica e o sol">
+                <line class="ln" x1="8" y1="172" x2="312" y2="172"/>
+                <g><circle class="fx-sun" cx="276" cy="36" r="13"/><g class="ln thin"><line x1="276" y1="14" x2="276" y2="8"/><line x1="298" y1="36" x2="304" y2="36"/><line x1="292" y1="20" x2="297" y2="15"/><line x1="260" y1="20" x2="255" y2="15"/></g></g>
+                <rect class="fs1" x="90" y="140" width="140" height="32"/>
+                <rect class="fs1" x="105" y="112" width="110" height="28"/>
+                <rect class="fs1" x="118" y="88" width="84" height="24"/>
+                <rect class="fs1" x="130" y="66" width="60" height="22"/>
+                <rect class="fs1" x="142" y="48" width="36" height="18"/>
+                <path class="fx-teal" d="M136 48 L148 36 L172 36 L184 48 Z"/>
+                <g class="fx-leaf"><rect x="82" y="136" width="148" height="4"/><rect x="97" y="108" width="118" height="4"/><rect x="110" y="84" width="92" height="4"/><rect x="122" y="62" width="68" height="4"/></g>
+                <g class="fx-leaf"><circle cx="90" cy="127" r="8"/><circle cx="108" cy="130" r="6"/><circle cx="224" cy="127" r="8"/><circle cx="206" cy="131" r="6"/>
+                  <circle cx="108" cy="100" r="7"/><circle cx="212" cy="100" r="7"/><circle cx="124" cy="76" r="6"/><circle cx="196" cy="76" r="6"/><circle cx="136" cy="54" r="5"/><circle cx="184" cy="54" r="5"/></g>
+                <g class="hole"><rect x="100" y="150" width="8" height="8"/><rect x="120" y="150" width="8" height="8"/><rect x="140" y="150" width="8" height="8"/><rect x="172" y="150" width="8" height="8"/><rect x="192" y="150" width="8" height="8"/><rect x="212" y="150" width="8" height="8"/>
+                  <rect x="124" y="120" width="8" height="8"/><rect x="146" y="120" width="8" height="8"/><rect x="166" y="120" width="8" height="8"/><rect x="188" y="120" width="8" height="8"/>
+                  <rect x="138" y="94" width="8" height="8"/><rect x="156" y="94" width="8" height="8"/><rect x="174" y="94" width="8" height="8"/></g>
+                <rect class="fx-teal" x="46" y="148" width="26" height="24" rx="5"/>
+                <path class="ln thin" d="M72 156 Q82 156 90 150"/>
+                <line class="ln" x1="258" y1="172" x2="258" y2="106"/>
+                <g class="ln"><line x1="258" y1="106" x2="258" y2="80"/><line x1="258" y1="106" x2="280" y2="119"/><line x1="258" y1="106" x2="236" y2="119"/></g>
+                <circle class="fs1" cx="258" cy="106" r="3"/>
+                <circle class="fx-leaf" cx="30" cy="164" r="8"/><circle class="fx-leaf" cx="296" cy="164" r="8"/>
+                <circle class="fs1" cx="238" cy="158" r="3.4"/><line class="ln" x1="238" y1="162" x2="238" y2="172"/>
+              </svg>
+              <figcaption class="mono">Rascunho · terraços-horta, painéis no topo, cisterna na base</figcaption>
+            </figure>
+            <figure class="photo">
+              <img src="supertrees.jpg" width="1400" height="1049" alt="Vista aérea de cima dos Supertrees do Gardens by the Bay, em Singapura, cercados de vegetação densa">
+              <figcaption class="mono">Na prática · Supertree Grove, Gardens by the Bay, Singapura, vista aérea · foto: dronepicr, CC BY 2.0, via Wikimedia Commons</figcaption>
+            </figure>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 8 · O que mudou -->
+    <section class="scene" id="mudancas" data-name="O que mudou" aria-label="O que mudou de uma era para a outra">
+      <div class="in">
+        <div class="sec-head rise" style="--d:0"><h2>O que mudou de uma era para a outra</h2></div>
+        <div class="panel-white rise" style="--d:1">
+          <div class="diffs">
+            <div class="diff">
+              <h3>A bomba tinha forma. A IA tem uma caixa de texto.</h3>
+              <p>Cogumelo, átomo e órbitas davam ao otimismo de 1955 algo para desenhar, e o resultado foi ornamental. A IA não tem silhueta, só o prédio que a abriga. Por isso o otimismo de hoje procura símbolos fora dela, na natureza.</p>
+            </div>
+            <div class="diff">
+              <h3>O brutalismo envelheceu como acusação. O Googie, como promessa vencida.</h3>
+              <p>Muitos prédios brutalistas hoje são tombados e disputados por quem os admira. O reator barato demais para medir nunca veio, e o futurismo atômico ficou com cara de cenário. Vale se perguntar qual dos dois destinos espera o solarpunk.</p>
+            </div>
+            <div class="diff">
+              <h3>A energia fecha o círculo.</h3>
+              <p>Treinar e rodar modelos exige muita eletricidade, e as grandes empresas de tecnologia voltaram a olhar para reatores. Em 2024 a Microsoft fechou contrato para reativar uma unidade de Three Mile Island, o local do acidente de 1979. A promessa de energia infinita voltou, agora a serviço da produtividade infinita.</p>
+            </div>
+            <div class="diff">
+              <h3>O brutalismo da IA já foi construído. O otimismo ainda é render.</h3>
+              <p>Existem milhares de data centers e quase nenhum arquiteto assinando um. O lado do medo ganhou por omissão. O lado da esperança tem desenhos bonitos e poucas obras, que é exatamente a situação do futurismo atômico em 1950.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quem sustenta + limites -->
+    <section class="scene" id="referencias" data-name="Quem sustenta" aria-label="Referências teóricas e limites da tese">
+      <div class="in">
+        <div class="sec-head rise" style="--d:0">
+          <h2>Quem sustenta a ideia, e onde ela ainda é frágil</h2>
+          <p>Quatro autores dão o mecanismo. Cinco cuidados dizem o que falta provar.</p>
+        </div>
+        <div class="refs-grid">
+          <div class="refs rise" style="--d:1">
+            <article class="ref"><b>Douglass North</b><span class="mono">Instituições, 1990 e 2005</span><p>Instituições são as regras formais e informais que organizam a vida econômica. Elas mudam conforme as pessoas interpretam o mundo, sobretudo quando há incerteza radical.</p></article>
+            <article class="ref"><b>Denzau e North</b><span class="mono">Modelos mentais compartilhados, 1994</span><p>Crenças comuns viram ideologias e instituições. Imagens do futuro são a parte visível desses modelos mentais.</p></article>
+            <article class="ref"><b>Jens Beckert</b><span class="mono">Imagined Futures, 2016</span><p>Com o futuro incalculável, decisões se apoiam em expectativas ficcionais. Um futuro imaginado age no presente mesmo se nunca acontecer.</p></article>
+            <article class="ref"><b>Reinhart Koselleck</b><span class="mono">Futures Past</span><p>Distingue o espaço de experiência, que é o passado no presente, do horizonte de expectativa. Tecnologias disruptivas deslocam esse horizonte.</p></article>
+          </div>
+          <div class="limits rise" style="--d:3">
+            <div class="mono">Onde a tese precisa de trabalho</div>
+            <ol>
+              <li>Operacionalizar o retrofuturismo: provar que as imagens de futuro revelam expectativas que pesam em decisões econômicas.</li>
+              <li>A causalidade pode correr nos dois sentidos, e a expectativa pode ser efeito da mudança institucional.</li>
+              <li>Os dois períodos são muito diferentes, e a IA é mais difusa que a energia nuclear.</li>
+              <li>A era da IA ainda não tem resultados de longo prazo para comparar.</li>
+              <li>Falta um recorte institucional observável, como regulação, política industrial ou governança.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 · Destino -->
+    <section class="scene" id="destino" data-name="Destino" aria-label="Destino: a aposta">
+      <div class="in">
+        <section class="close rise" style="--d:0">
+          <div class="mono">Aposta</div>
+          <h2>Concreto por fora, <em>jardim</em> por dentro</h2>
+          <div class="body">
+            <p>Os dois humores raramente aparecem puros. O Brasil já construiu essa síntese: o SESC Pompeia, de Lina Bo Bardi (1982), é concreto bruto com deck, água e gente dentro, e os jardins de Burle Marx amaciaram o concreto modernista do Rio a Brasília.</p>
+            <p>Se a IA deixar algum prédio que preste, deve ser nessa mistura: infraestrutura pesada e discreta, cercada de vida que alguém realmente cuide. O erro a evitar é copiar o Googie, que pintou a promessa na fachada sem entregar o que ela dizia.</p>
+            <p class="mono" style="opacity:.85">O futuro não precisa acontecer para transformar o presente.</p>
+            <button class="go" type="button" data-first style="align-self:flex-start; background:#fff; color:#00606b; border-color:#00606b; outline-color:#fff"><span aria-hidden="true">←</span> Voltar à largada</button>
+          </div>
+        </section>
+        <p class="credits">Fundo: Space Needle e o horizonte de Seattle, foto de Guywelch2000, CC BY 4.0, via Wikimedia Commons, com camada de cor por cima. Demais imagens com autor e licença na legenda, todas via Wikimedia Commons. Os desenhos são elevações conceituais ilustrativas, sem escala, e os dois da era da IA são rascunhos de proposta, não projetos reais. A ligação entre estilos e humores coletivos é interpretação do ensaio.</p>
+      </div>
+    </section>
+  </div>
+
+  <header class="hud">
+    <div class="brand"><b>Átomo e Algoritmo</b><span class="mono" id="hudName" aria-live="polite">Largada</span><span class="mono" id="hudCount">1/9</span></div>
+    <div class="arrows">
+      <button type="button" id="prev" aria-label="Estação anterior">←</button>
+      <button type="button" id="next" aria-label="Próxima estação">→</button>
+    </div>
+  </header>
+
+  <nav class="road" id="road" aria-label="Estações da viagem">
+    <div class="lane" id="lane">
+      <div class="stop mono" id="stopLabel">Largada</div>
+      <div class="car" id="car">
+        <svg viewBox="-24 0 148 44" aria-hidden="true">
+          <circle class="puff" cx="-2" cy="30" r="3" fill="#fff"/><circle class="puff" cx="-10" cy="28" r="2" fill="#fff" style="animation-delay:.2s"/>
+          <path d="M8 22 L1 7 Q16 8 30 19 Z" fill="#19c3d3" stroke="#0a2a30" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M6 24 Q6 18 14 18 L104 18 Q116 19 119 25 L119 30 Q119 33 115 33 L10 33 Q6 33 6 29 Z" fill="#fff" stroke="#0a2a30" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M44 18 Q52 4 72 4 Q92 4 100 18 Z" fill="#bff1f6" stroke="#0a2a30" stroke-width="1.6" stroke-linejoin="round"/>
+          <line x1="72" y1="5" x2="72" y2="18" stroke="#0a2a30" stroke-width="1.4"/>
+          <path d="M12 26 L112 26" stroke="#19c3d3" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="115" cy="23" r="2.6" fill="#fff" stroke="#0a2a30" stroke-width="1.2"/>
+          <g class="wheel"><circle cx="30" cy="34" r="7" fill="#1d2528" stroke="#fff" stroke-width="1.6"/><path d="M30 28 L30 40 M24 34 L36 34" stroke="#fff" stroke-width="1.4"/></g>
+          <g class="wheel"><circle cx="92" cy="34" r="7" fill="#1d2528" stroke="#fff" stroke-width="1.6"/><path d="M92 28 L92 40 M86 34 L98 34" stroke="#fff" stroke-width="1.4"/></g>
+        </svg>
+      </div>
+    </div>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var track = document.getElementById('track');
+  var bg = document.getElementById('bg');
+  var skyNear = document.getElementById('skyNear');
+  var skyFar = document.getElementById('skyFar');
+  var lane = document.getElementById('lane');
+  var car = document.getElementById('car');
+  var stopLabel = document.getElementById('stopLabel');
+  var hudName = document.getElementById('hudName');
+  var hudCount = document.getElementById('hudCount');
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+  var scenes = [].slice.call(document.querySelectorAll('.scene'));
+  var N = scenes.length;
+  var cur = 0, busy = false, driveTimer = 0;
+  var still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var travelMs = still ? 1 : 1000;
+
+  var stops = scenes.map(function (sc, i) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'st';
+    b.style.left = (i / (N - 1) * 100) + '%';
+    b.setAttribute('aria-label', 'Ir para ' + sc.getAttribute('data-name'));
+    b.addEventListener('click', function () { go(i); });
+    lane.insertBefore(b, stopLabel);
+    return b;
+  });
+
+  function W() { return stage.clientWidth; }
+  function layout() {
+    scenes.forEach(function (s) { s.style.width = W() + 'px'; });
+    track.style.width = (W() * N) + 'px';
+    bg.style.width = (W() + (N - 1) * W() * 0.1) + 'px';
+    place(true);
+  }
+  function place(instant) {
+    var w = W();
+    if (instant) {
+      [track, bg, skyNear, skyFar, car, stopLabel].forEach(function (e) { e.style.transition = 'none'; });
+    }
+    track.style.transform = 'translate3d(' + (-cur * w) + 'px,0,0)';
+    bg.style.transform = 'translate3d(' + (-cur * w * 0.1) + 'px,0,0)';
+    var stepNear = Math.max(0, Math.min(w * 0.32, (7200 - w) / (N - 1)));
+    var stepFar = Math.max(0, Math.min(w * 0.16, (5600 - w) / (N - 1)));
+    skyNear.style.transform = 'translate3d(' + (-cur * stepNear) + 'px,0,0)';
+    skyFar.style.transform = 'translate3d(' + (-cur * stepFar) + 'px,0,0)';
+    var pct = (cur / (N - 1) * 100) + '%';
+    car.style.left = pct; stopLabel.style.left = pct;
+    if (instant) {
+      void track.offsetWidth;
+      [track, bg, skyNear, skyFar, car, stopLabel].forEach(function (e) { e.style.transition = ''; });
+    }
+  }
+  function sync() {
+    scenes.forEach(function (s, i) {
+      var on = i === cur;
+      s.classList.toggle('active', on);
+      if (on) s.removeAttribute('inert'); else s.setAttribute('inert', '');
+      if (on) s.scrollTop = 0;
+    });
+    stops.forEach(function (b, i) { if (i === cur) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+    var name = scenes[cur].getAttribute('data-name');
+    stopLabel.textContent = name; hudName.textContent = name;
+    hudCount.textContent = (cur + 1) + '/' + N;
+    prev.disabled = cur === 0; next.disabled = cur === N - 1;
+  }
+  function go(n) {
+    n = Math.max(0, Math.min(N - 1, n));
+    if (n === cur || busy) return;
+    var dir = n > cur ? 1 : -1;
+    stage.setAttribute('data-dir', dir);
+    stage.style.setProperty('--dir', dir);
+    scenes.forEach(function (s) { s.style.setProperty('--dir', dir); });
+    car.classList.toggle('rev', dir < 0);
+    cur = n;
+    stage.classList.add('driving');
+    busy = true;
+    place(false);
+    sync();
+    clearTimeout(driveTimer);
+    driveTimer = setTimeout(function () { stage.classList.remove('driving'); busy = false; }, travelMs);
+  }
+
+  next.addEventListener('click', function () { go(cur + 1); });
+  prev.addEventListener('click', function () { go(cur - 1); });
+  [].forEach.call(document.querySelectorAll('[data-next]'), function (b) { b.addEventListener('click', function () { go(cur + 1); }); });
+  [].forEach.call(document.querySelectorAll('[data-first]'), function (b) { b.addEventListener('click', function () { go(0); }); });
+
+  // roda do mouse: rolagem interna se a estacao for mais alta que a tela, senao dirige
+  var wheelLocked = false, wheelTimer = 0;
+  stage.addEventListener('wheel', function (e) {
+    var sc = scenes[cur];
+    var vertical = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
+    if (vertical && sc.scrollHeight > sc.clientHeight + 2) {
+      var atEnd = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 2;
+      var atTop = sc.scrollTop <= 0;
+      if ((e.deltaY > 0 && !atEnd) || (e.deltaY < 0 && !atTop)) return;
+    }
+    if (e.target.closest && e.target.closest('.table-scroll') && !vertical) return;
+    e.preventDefault();
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(function () { wheelLocked = false; }, 180);
+    var d = vertical ? e.deltaY : e.deltaX;
+    if (wheelLocked || busy || Math.abs(d) < 6) return;
+    wheelLocked = true;
+    go(cur + (d > 0 ? 1 : -1));
+  }, { passive: false });
+
+  // teclado
+  window.addEventListener('keydown', function (e) {
+    if (e.target.closest && e.target.closest('.table-scroll')) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { go(cur + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { go(cur - 1); e.preventDefault(); }
+    else if (e.key === 'Home') { go(0); e.preventDefault(); }
+    else if (e.key === 'End') { go(N - 1); e.preventDefault(); }
+  });
+
+  // arrastar / deslizar
+  var sx = 0, sy = 0, st = 0, drag = false;
+  stage.addEventListener('pointerdown', function (e) {
+    if (e.target.closest('button, a, .table-scroll')) return;
+    sx = e.clientX; sy = e.clientY; st = Date.now(); drag = true;
+  });
+  window.addEventListener('pointerup', function (e) {
+    if (!drag) return; drag = false;
+    var dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.3 && Date.now() - st < 900) go(cur + (dx < 0 ? 1 : -1));
+  });
+
+  window.addEventListener('resize', layout);
+  layout();
+  var ids = scenes.map(function (s) { return s.id; });
+  var h = (location.hash || '').replace('#', '');
+  var start = ids.indexOf(h);
+  if (start > 0) cur = start;
+  scenes.forEach(function (s) { s.style.setProperty('--dir', 1); });
+  sync();
+  place(true);
+})();
+</script>
